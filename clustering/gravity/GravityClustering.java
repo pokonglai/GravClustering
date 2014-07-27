@@ -4,6 +4,7 @@ import geom.VectorND;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import util.UnionFind;
@@ -49,7 +50,9 @@ public class GravityClustering
 	public static boolean USE_UNIT_MASS = true;
 	public static double G = 1*Math.pow(10, -4); // gravitational constant
 	public static double DELTA_G = 0.001; // constant to avoid the big crunch
-	public static double EPS = 1000.0; // minimum distance for two particles to merge
+	public static double ALPHA = 0.03; // minimum size of a cluster
+	public static double EPS = Double.MAX_VALUE; // minimum distance for two particles to merge, it is set to GAMMA * (max_distance_in_dataset)
+	public static double GAMMA = 0.6; // used to compute EPS, it is a percentage of the maximum distance within a dataset
 	
 	public ArrayList<Particle> outliers; // after clustering this will contain all of the outliers
 	public ArrayList<Particle> particles; // all dataset elements
@@ -59,6 +62,7 @@ public class GravityClustering
 	public GravityClustering()
 	{
 		particles = new ArrayList<Particle>();
+		outliers = new ArrayList<Particle>();
 	}
 	
 	/**
@@ -69,6 +73,7 @@ public class GravityClustering
 	{
 		if (vectors.size() == 0) return false;
 		particles.clear();
+		outliers.clear();
 		
 		double[] minValues = new double[vectors.size()];
 		double[] maxValues = new double[vectors.size()];
@@ -99,6 +104,7 @@ public class GravityClustering
 			particles.add(p);
 		}
 		
+		// compute the maximum distance within the dataset
 		double dist = 0.0;
 		for (int i = 0; i < dimensions; i++)
 		{
@@ -106,7 +112,7 @@ public class GravityClustering
 			double max = maxValues[i];
 			dist += ((max - min) * (max - min));
 		}
-		EPS = Math.sqrt(dist);
+		EPS = GAMMA*Math.sqrt(dist);
 		
 		return true;
 	}
@@ -120,9 +126,9 @@ public class GravityClustering
 	 */
 	private void move(Particle a, Particle b, double grav_const)
 	{
+		// perform a simultaneous update to both particles
 		double[] a_move = Particle.MoveVector(a, b, grav_const);
 		double[] b_move = Particle.MoveVector(a, b, grav_const);
-		
 		for (int i = 0; i < a.pos.length(); i++) a.pos.elements[i] += a_move[i];
 		for (int i = 0; i < b.pos.length(); i++) b.pos.elements[i] += b_move[i];
 	}
@@ -178,7 +184,18 @@ public class GravityClustering
 			}
 		}
 		
-		// run through the clusters and ensure that they are of a certain size
+		// run through the clusters and ensure that they are of a certain size, remove those that are too small
+		ArrayList<Integer> tooSmall = new ArrayList<Integer>();
+		for (Entry<Integer, ParticleCluster> entry : clusters.entrySet())
+		{
+			ParticleCluster pc = entry.getValue();
+			if (pc.elements.size() < ALPHA*particles.size())
+			{
+				for (Particle p : pc.elements) outliers.add(p);
+				tooSmall.add(entry.getKey());
+			}
+		}
+		for (Integer key: tooSmall) clusters.remove(key);
 		
 		return clusters;
 	}

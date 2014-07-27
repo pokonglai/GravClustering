@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 
 public class DrawPane_Point2D extends DrawPane
 {
-	private Color clrDefault;
+	protected Color clrDefault;
 	
 	public HashMap<Color, ArrayList<Vector2D>> points;
 	public boolean bFilled;
@@ -19,8 +19,6 @@ public class DrawPane_Point2D extends DrawPane
 	public DrawPane_Point2D(int w, int h)
 	{
 		super(w, h);
-
-//		points = new ArrayList<Vector2D>();
 		points = new HashMap<Color, ArrayList<Vector2D>>();
 		clrDefault = Color.BLACK;
 		bFilled = true;

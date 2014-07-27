@@ -2,10 +2,12 @@ package testers;
 
 import javax.swing.JFrame;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -13,12 +15,11 @@ import java.util.Random;
 
 import geom.Vector2D;
 import geom.VectorND;
-
 import clustering.gravity.GravityClustering;
 import clustering.gravity.GravityClustering.ParticleCluster;
 import clustering.gravity.Particle;
-
 import ui.DrawPane_Point2D;
+import ui.GravClusterPane_Point2D;
 
 public class GravClustering_Tester 
 {
@@ -48,9 +49,9 @@ public class GravClustering_Tester
 	}
 	
 	// generate a set clusters
-	public static void generateGravTest(int width, int height, int numberOfClusters, DrawPane_Point2D pane)
+	public static void generateGravTest(int width, int height, int numberOfClusters, GravClusterPane_Point2D pane)
 	{
-		if (pane.points.size() > 0) pane.points.clear();
+		if (pane.points.size() > 0) pane.clearPoints();
 		for (int i = 0; i < numberOfClusters; i++)
 		{
 			double x = random.nextDouble()*width;
@@ -66,7 +67,7 @@ public class GravClustering_Tester
 		pane.repaint();
 	}
 	
-	public static void runGravTest(DrawPane_Point2D pane, int iter)
+	public static void runGravTest(GravClusterPane_Point2D pane, int iter)
 	{
 		ArrayList<VectorND> dataset = new ArrayList<VectorND>();
 		for (ArrayList<Vector2D> pt_sets : pane.points.values())
@@ -83,6 +84,8 @@ public class GravClustering_Tester
 		
 		HashMap<Integer, ParticleCluster> clusters = gravClust.run(iter);
 		pane.clearPoints();
+		
+		// add all the clustered elements
 		for(Entry<Integer, ParticleCluster> entry : clusters.entrySet())
 		{
 			ParticleCluster cluster = entry.getValue();
@@ -94,7 +97,12 @@ public class GravClustering_Tester
 				pane.addPoint(clr, vec);
 			}
 		}
+		
+		// add the outliers as black
+		pane.outliers.clear();
+		for (Particle p : gravClust.outliers) pane.outliers.add(new Vector2D(p.pos.get(0), p.pos.get(1)));
 		pane.repaint();
+		
 	}
 	
 	public static void main(String[] args)
@@ -102,15 +110,13 @@ public class GravClustering_Tester
 		final int width = 800;
 		final int height = 600;
 		
-		final DrawPane_Point2D pane = new DrawPane_Point2D(width, height);
+		final GravClusterPane_Point2D pane = new GravClusterPane_Point2D(width, height);
 		
 		JFrame f = new JFrame();
-		f.setContentPane(pane);
+		f.setLayout(new BorderLayout(2,2));
+		f.add(pane, BorderLayout.CENTER);
 		f.setSize(pane.getSize());
-		f.setVisible(true);
 		f.setResizable(false);
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
 		f.addKeyListener(new KeyListener()
 		{
 			public void keyTyped(KeyEvent e) { }
@@ -124,11 +130,13 @@ public class GravClustering_Tester
 				
 				if (e.getKeyCode() == KeyEvent.VK_ENTER)
 				{
-					runGravTest(pane, 150);
+					runGravTest(pane, 1000);
 				}
 			}
 			public void keyPressed(KeyEvent e) { }
 		});
 		
+		f.setVisible(true);
+		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 }
